@@ -50,6 +50,7 @@ public enum CellType
     Road,
     Structure,
     SpecialStructure,
+    Ground,
     None
 }
 
@@ -202,6 +203,11 @@ public class GameGrid
             }
         }
         return adjacentCells;
+    }
+
+    public CellType GetCellOf(int x, int y)
+    {
+        return _grid[x, y];
     }
 
     /// <summary>

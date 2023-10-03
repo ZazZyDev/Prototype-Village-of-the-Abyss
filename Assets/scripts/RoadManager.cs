@@ -22,12 +22,10 @@ public class RoadManager : MonoBehaviour
     {
         if (placementManager.CheckIfPositionInBound(position) == false)
         {
-            Debug.Log("Position out of bounds: " + position);
             return;
         }
         if (placementManager.CheckIfPositionIsFree(position) == false)
         {
-            Debug.Log("Position not free: " + position);
             return;
         }
 
@@ -64,12 +62,15 @@ public class RoadManager : MonoBehaviour
                     roadPositionsToRecheck.Add(temporaryPosition);
                     continue;
                 }
+
                 placementManager.PlaceTemporaryStructure(temporaryPosition, roadFixer.deadEnd, CellType.Road);
             }
+
         }
+        placementManager.FixOverlayed();
+        //placementManager.ClearOverlayStorage();
 
         FixRoadPrefabs();
-
     }
 
     private void FixRoadPrefabs()
@@ -102,5 +103,6 @@ public class RoadManager : MonoBehaviour
         }
         temporaryPlacementPositions.Clear();
         startPosition = Vector3Int.zero;
+
     }
 }

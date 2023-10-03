@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +10,8 @@ public class PlacementManager : MonoBehaviour
     public GameGridVisualizer gameGridVisualizer;
     private Dictionary<Vector3Int, StructureModel> temporaryRoadobjects = new Dictionary<Vector3Int, StructureModel>();
     private Dictionary<Vector3Int, StructureModel> structureDictionary = new Dictionary<Vector3Int, StructureModel>();
+    public Dictionary<Vector3Int, StructureModel> restoredOverlayedStructures = new Dictionary<Vector3Int, StructureModel>();
+
     public GameObject fillObject;
     private void Start()
     {
@@ -31,8 +34,7 @@ public class PlacementManager : MonoBehaviour
 
             return true;
         }
-        Debug.LogWarning("OOB: PositionX:" + position.x + "VS WIDTH: " + width);
-        Debug.LogWarning("OOB: PositionZ:" + position.z + "VS height: " + height);
+
         return false;
     }
 
@@ -55,20 +57,50 @@ public class PlacementManager : MonoBehaviour
 
     internal bool CheckIfPositionIsFree(Vector3Int position)
     {
-        return CheckIfPositionIsOfType(position, CellType.Empty);
+        bool free = CheckIfPositionIsOfType(position, CellType.Empty) || CheckIfPositionIsOfType(position, CellType.Ground);
+        return free;
     }
 
     private bool CheckIfPositionIsOfType(Vector3Int position, CellType type)
     {
+
         return placementGrid[position.x, position.z] == type;
     }
 
     internal void PlaceTemporaryStructure(Vector3Int position, GameObject structurePrefab, CellType type)
     {
+        if (structureDictionary.TryGetValue(position, out StructureModel existingStructure))
+        {
+                restoredOverlayedStructures.Add(position, structureDictionary[position]);
+                Destroy(existingStructure.gameObject);
+                structureDictionary.Remove(position);
+        }
         placementGrid[position.x, position.z] = type;
         StructureModel structure = CreateANewStructureModel(position, structurePrefab, type);
         temporaryRoadobjects.Add(position, structure);
     }
+
+    internal void FixOverlayed()
+    {
+        foreach (var overlayed in restoredOverlayedStructures)
+        {
+            if (!structureDictionary.ContainsKey(overlayed.Key) && !temporaryRoadobjects.ContainsKey(overlayed.Key)) // Check if the object isn't in the structureDictionary or temporaryRoadobjects
+            {
+ 
+                placementGrid[overlayed.Key.x, overlayed.Key.z] = CellType.Ground;
+                StructureModel structure = CreateANewStructureModel(overlayed.Key, fillObject, CellType.Ground);
+                structureDictionary.Add(overlayed.Key, structure); // Add the newly created structure to structureDictionary
+                restoredOverlayedStructures.Remove(overlayed.Key);
+            }
+        }
+    }
+
+    //internal void ClearOverlayStorage()
+    //{
+    //    Debug.Log("CLEARING OVERLAY");
+    //    restoredOverlayedStructures.Clear(); // Clear restoredOverlayedStructures since we've fixed the overlays
+
+    //}
 
     internal List<Vector3Int> GetNeighboursOfTypeFor(Vector3Int position, CellType type)
     {
@@ -79,6 +111,15 @@ public class PlacementManager : MonoBehaviour
             neighbours.Add(new Vector3Int(point.X, 0, point.Y));
         }
         return neighbours;
+    }
+
+
+    internal CellType GetTypeFor(Vector3Int position)
+    {
+        var neighbourVertices = placementGrid.GetCellOf(position.x, position.z);
+
+
+        return neighbourVertices;
     }
 
     private StructureModel CreateANewStructureModel(Vector3Int position, GameObject structurePrefab, CellType type)
@@ -122,14 +163,14 @@ public class PlacementManager : MonoBehaviour
             // Check if there is an existing structure at the target position in structureDictionary.
             if (structureDictionary.TryGetValue(position, out StructureModel existingStructure))
             {
-                Debug.Log("EXISTING"+ existingStructure.ToString());
                 // Check if the existing structure is on CellType.Empty.
-                if (placementGrid[position.x, position.z] == CellType.Empty)
+                if (placementGrid[position.x, position.z] == CellType.Empty )
                 {
-                    // Destroy the existing structure if it's on CellType.Empty.
+                        // Destroy the existing structure if it's on CellType.Empty.
                     Destroy(existingStructure.gameObject);
                     structureDictionary.Remove(position);
-                    Debug.Log("DESTROYED AND REMOVED");
+
+
                 }
             }
 
@@ -174,9 +215,9 @@ public class PlacementManager : MonoBehaviour
     public void FillGrid()
     {
         ClearGrid();
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < width-5; x++)
         {
-            for (int z = 0; z < height; z++)
+            for (int z = 0; z < height-5; z++)
             {
                 if (placementGrid[x, z] == CellType.Empty)//maybe some things will be excluded from clear so leaving this hear
                 {

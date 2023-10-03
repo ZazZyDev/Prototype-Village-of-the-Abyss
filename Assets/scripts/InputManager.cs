@@ -42,7 +42,6 @@ public class InputManager : MonoBehaviour
 
             // Adjust the hit point and floor it to the nearest integer grid position
             Vector3Int positionInt = new Vector3Int(Mathf.FloorToInt(hit.point.x + 0.5f), 0, Mathf.FloorToInt(hit.point.z + 0.5f));
-            Debug.Log("Adjusted position: " + positionInt);
 
             return positionInt;
         }
